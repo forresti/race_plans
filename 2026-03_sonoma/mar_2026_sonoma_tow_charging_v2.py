@@ -8,8 +8,6 @@ pd.set_option("display.max_columns", None)  # Show all columns
 pd.set_option("display.expand_frame_repr", False)  # Prevent wrapping across lines
 pd.set_option("display.max_colwidth", None)  # Show full column content
 
-# with tow-charging
-
 # 62 kWh usable pack
 # 0–70% @ 70 kW
 # 70–92% @ 50 kW
