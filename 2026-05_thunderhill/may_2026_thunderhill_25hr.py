@@ -59,12 +59,12 @@ track_miles = 3.0
 # --- Driver definitions ---
 
 drivers = {
-    "Alexey": {"lap_time": 150, "pct_per_lap": 3.4, "battery_mode": "full"},
-    "Yezhi": {"lap_time": 160, "pct_per_lap": 2.9, "battery_mode": "full"},
-    "Roman": {"lap_time": 170, "pct_per_lap": 2.5, "battery_mode": "full"},
-    "Forrest": {"lap_time": 160, "pct_per_lap": 2.9, "battery_mode": "half"},
-    "Xiaoyu": {"lap_time": 170, "pct_per_lap": 2.5, "battery_mode": "half"},
-    "Amethyst": {"lap_time": 160, "pct_per_lap": 2.9, "battery_mode": "full"},
+    "Alexey": {"lap_time": 160, "pct_per_lap": 2.8, "battery_mode": "full"},
+    "Yezhi": {"lap_time": 160, "pct_per_lap": 2.8, "battery_mode": "full"},
+    "Roman": {"lap_time": 170, "pct_per_lap": 2.2, "battery_mode": "full"},
+    "Forrest": {"lap_time": 160, "pct_per_lap": 2.2, "battery_mode": "half"},
+    "Xiaoyu": {"lap_time": 170, "pct_per_lap": 2.2, "battery_mode": "half"},
+    "Amethyst": {"lap_time": 160, "pct_per_lap": 2.1, "battery_mode": "full"},
 }
 
 race_start_hour = 11
@@ -91,27 +91,67 @@ def get_block_for_time(elapsed: float) -> int:
             return i
     return len(blocks) - 1
 
-def get_charge_crew(prev_driver: str | None, next_driver: str) -> list[str]:
-    """Return the 2 people who supervise this charge session.
+def future_opportunities(person: str, stints: list[dict], current_idx: int) -> int:
+    """Count how many future charges this person could be eligible for."""
+    count = 0
+    for j in range(current_idx + 1, len(stints)):
+        s2 = stints[j]
+        if s2["charge_start_elapsed"] is None:
+            continue
+        prev2 = stints[j - 1]["driver"] if j > 0 else None
+        next2 = s2["driver"]
+        if person != next2 and person != prev2:
+            # Check person is in the right block
+            for bi2, (_, _, bd2) in enumerate(blocks):
+                if next2 in bd2:
+                    if person in bd2 or person == block_crew[bi2]:
+                        count += 1
+                    break
+    return count
 
-    Uses the next driver's block to determine crew, since the charge is for them.
-    """
-    # Find which block the next driver belongs to
-    bi = None
-    for i, (_, _, bd) in enumerate(blocks):
-        if next_driver in bd:
-            bi = i
-            break
-    if bi is None:
-        bi = get_block_for_time(0)
-    _, _, block_drivers = blocks[bi]
-    crew = block_crew[bi]
-    excluded = {next_driver}
-    if prev_driver:
-        excluded.add(prev_driver)
-    available_drivers = [p for p in block_drivers if p not in excluded]
-    # Crew member is always one of the two; pick one available driver as the other
-    return [available_drivers[0], crew] if available_drivers else [crew]
+
+def assign_charge_crews(stints: list[dict]) -> None:
+    """Assign charge crews to all stints, balancing duties across people."""
+    charge_counts: dict[str, int] = {}
+    for s in stints:
+        if s["charge_start_elapsed"] is None:
+            continue
+
+        # Find prev driver
+        idx = stints.index(s)
+        prev_driver = stints[idx - 1]["driver"] if idx > 0 else None
+        next_driver = s["driver"]
+
+        # Find block for next driver
+        bi = None
+        for i, (_, _, bd) in enumerate(blocks):
+            if next_driver in bd:
+                bi = i
+                break
+        if bi is None:
+            bi = 0
+        _, _, block_drivers = blocks[bi]
+        crew = block_crew[bi]
+
+        excluded = {next_driver}
+        if prev_driver:
+            excluded.add(prev_driver)
+        available_drivers = [p for p in block_drivers if p not in excluded]
+
+        # Pick the available driver with fewest charge duties so far.
+        # Break ties by fewest future charge opportunities (prefer those who
+        # are harder to schedule).
+        if available_drivers:
+            available_drivers.sort(key=lambda p: (
+                charge_counts.get(p, 0),
+                future_opportunities(p, stints, idx),
+            ))
+            picked = available_drivers[0]
+        else:
+            picked = crew
+        s["charge_crew"] = [picked, crew]
+        charge_counts[picked] = charge_counts.get(picked, 0) + 1
+        charge_counts[crew] = charge_counts.get(crew, 0) + 1
 
 # --- Stint sequence ---
 # Each entry: (driver_name, charge_target_pct or None for no charge first)
@@ -290,11 +330,7 @@ def build_schedule(full_charge_target: float) -> list[dict]:
             "charge_crew": None,
         })
 
-        # Compute charge crew for this stint (needs prev driver)
-        if charge_start_elapsed is not None:
-            prev_driver = stints[-2]["driver"] if len(stints) >= 2 else None
-            stints[-1]["charge_crew"] = get_charge_crew(prev_driver, driver_name)
-
+    assign_charge_crews(stints)
     return stints
 
 
