@@ -129,15 +129,15 @@ stint_sequence = [
     ("Alexey", None, 4 * 60),      # drive starting 96.3%, block ends at 4h
     ("Yezhi", "full", 4 * 60),     # charge to full, Yezhi drives first half
     ("Roman", None, 4 * 60),       # Roman drives rest (no charge, shared battery)
-    # Block 2 (Sat 3pm-Sun 3am, 12hr): Forrest+Xiaoyu share a battery, Amethyst full
-    ("Forrest", "full", 16 * 60),   # charge full, Forrest drives first half
-    ("Xiaoyu", None, 16 * 60),     # Xiaoyu drives second half (shared battery)
+    # Block 2 (Sat 3pm-Sun 3am, 12hr): Xiaoyu+Forrest share a battery, Amethyst full
+    ("Xiaoyu", "full", 16 * 60),    # charge full, Xiaoyu drives first half
+    ("Forrest", None, 16 * 60),     # Forrest drives second half (shared battery)
     ("Amethyst", "full", 16 * 60),
-    ("Xiaoyu", "full", 16 * 60),   # alternate who goes first
+    ("Xiaoyu", "full", 16 * 60),
     ("Forrest", None, 16 * 60),
     ("Amethyst", "full", 16 * 60),
-    ("Forrest", "full", 16 * 60),
-    ("Xiaoyu", None, 16 * 60),
+    ("Xiaoyu", "full", 16 * 60),
+    ("Forrest", None, 16 * 60),
     ("Amethyst", "full", 16 * 60),
     ("Xiaoyu", "full", 16 * 60),
     ("Forrest", None, 16 * 60),
@@ -435,7 +435,7 @@ def print_schedule(stints: list[dict], full_charge_target: float):
             if event_type == "charge":
                 crew_str = " + ".join(s["charge_crew"])
                 print(f"  Task {task_num}: Charge (with {crew_str})")
-                print(f"    {format_clock(s['charge_start_elapsed'] - hookup_time):>10}  Plug in charger")
+                print(f"    {format_clock(s['charge_start_elapsed'] - hookup_time):>10}  Connect for charging")
                 print(f"    {format_clock(s['charge_start_elapsed']):>10}  Charging {s['charge_start_pct']:.0f}% → {s['charge_target_pct']:.0f}% ({s['charge_min']:.0f} min)")
                 print(f"    {format_clock(s['buffer_end_elapsed']):>10}  Buffer done")
             else:
