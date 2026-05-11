@@ -1,12 +1,5 @@
 from math import floor
 
-import pandas as pd
-
-pd.set_option("display.max_rows", None)
-pd.set_option("display.max_columns", None)
-pd.set_option("display.expand_frame_repr", False)
-pd.set_option("display.max_colwidth", None)
-
 # 62 kWh usable pack
 # 0–70% @ 70 kW
 # 70–92% @ 50 kW
@@ -38,23 +31,10 @@ charge_data: list[list[float]] = [
     [94.4, 56.8 - 5.3],
 ]
 
-# Thunderhill 3-mile layout
-# [lap_time_seconds, battery_%_per_lap]
-# Derived from 2025 Thunderhill 25hr race data
-lap_data = [
-    [150, 3.4],  # 2:30
-    [160, 2.9],  # 2:40
-    [170, 2.5],  # 2:50
-    [180, 2.2],  # 3:00
-    [190, 1.9],  # 3:10
-    [200, 1.7],  # 3:20
-    [210, 1.5],  # 3:30
-]
-
 hookup_time = 5  # minutes to hook up to the charger
 charge_delay_time = 20  # minutes buffer after charging
 driver_swap_time = 5  # minutes for mid-battery driver change
-track_miles = 3.0
+track_miles = 2.866
 
 # --- Driver definitions ---
 
@@ -84,12 +64,6 @@ blocks = [
     (4, 16, ["Forrest", "Xiaoyu", "Amethyst"]),
     (16, 25, ["Alexey", "Yezhi", "Roman"]),
 ]
-
-def get_block_for_time(elapsed: float) -> int:
-    for i, (start_h, end_h, _) in enumerate(blocks):
-        if start_h * 60 <= elapsed < end_h * 60:
-            return i
-    return len(blocks) - 1
 
 def future_opportunities(person: str, stints: list[dict], current_idx: int) -> int:
     """Count how many future charges this person could be eligible for."""
@@ -154,42 +128,41 @@ def assign_charge_crews(stints: list[dict]) -> None:
         charge_counts[crew] = charge_counts.get(crew, 0) + 1
 
 # --- Stint sequence ---
-# Each entry: (driver_name, charge_target_pct or None for no charge first)
-# None means "drive on whatever battery is left" (for shared-battery stints)
-# "full" means charge to the full_charge_target (determined by optimizer)
-# "half" means charge to 50%
-# A number means charge to exactly that %
-
-# Block 1 (Sat 11am-3pm): Alexey burns starting battery, charge, Yezhi+Roman share
-# Block 2 (Sat 3pm-Sun 3am): Forrest(half), Xiaoyu(half), Amethyst(full), repeat
-# Block 3 (Sun 3am-12pm): Alexey(full), Yezhi(full), Roman(full)
+# (driver, charge_mode, deadline_minutes_from_start)
+# charge_mode: "full" = charge to CHARGE_TARGET, None = drive on current battery
+# deadline: latest time this stint can end
+#
+# Constraints:
+#   Xiaoyu: no night driving. Done by 8pm (9*60), back at 9am (22*60). Half stints.
+#   Forrest, Amethyst: done by 3am (16*60)
+#   Alexey, Yezhi, Roman: morning shift + back at 3am (16*60 onwards)
+#   Alexey, Amethyst: prefer full stints
+#   Everyone: target 2hr+ track time
+#
+# Sunset ~7:20pm, sunrise ~5am. Night = ~8pm-5:30am.
 
 stint_sequence = [
-    # Block 1 (Sat 11am-3pm, 4hr): Alexey burns start battery, charge, Yezhi+Roman share
-    ("Alexey", None, 4 * 60),      # drive starting 96.3%, block ends at 4h
-    ("Yezhi", "full", 4 * 60),     # charge to full, Yezhi drives first half
-    ("Roman", None, 4 * 60),       # Roman drives rest (no charge, shared battery)
-    # Block 2 (Sat 3pm-Sun 3am, 12hr): Xiaoyu+Forrest share a battery, Amethyst full
-    ("Xiaoyu", "full", 16 * 60),    # charge full, Xiaoyu drives first half
-    ("Forrest", None, 16 * 60),     # Forrest drives second half (shared battery)
-    ("Amethyst", "full", 16 * 60),
-    ("Xiaoyu", "full", 16 * 60),
-    ("Forrest", None, 16 * 60),
-    ("Amethyst", "full", 16 * 60),
-    ("Xiaoyu", "full", 16 * 60),
-    ("Forrest", None, 16 * 60),
-    ("Amethyst", "full", 16 * 60),
-    ("Xiaoyu", "full", 16 * 60),
-    ("Forrest", None, 16 * 60),
-    ("Amethyst", "full", 16 * 60),
-    # Block 3 (Sun 3am-12pm, 9hr): Alexey, Yezhi, Roman
-    ("Alexey", "full", 25 * 60),
-    ("Yezhi", "full", 25 * 60),
-    ("Roman", "full", 25 * 60),
-    ("Alexey", "full", 25 * 60),
-    ("Yezhi", "full", 25 * 60),
-    ("Roman", "full", 25 * 60),
+    # Morning (Sat 11am-~3pm): Alexey, Yezhi, Roman
+    ("Alexey", None, 25 * 60),       # burns starting 96.3%
+    ("Yezhi", "full", 25 * 60),      # charge, Yezhi drives first half
+    ("Roman", None, 25 * 60),        # Roman drives second half (shared)
+    # Afternoon (Sat ~3pm-8pm): Xiaoyu, Forrest, Amethyst
+    ("Xiaoyu", "full", 9 * 60),      # charge, Xiaoyu half. Must end by 8pm
+    ("Forrest", None, 25 * 60),      # Forrest drives second half (shared)
+    ("Amethyst", "full", 25 * 60),   # charge, Amethyst full
+    # Night (Sat ~9pm-3am): Forrest, Amethyst
+    ("Forrest", "full", 16 * 60),    # charge, Forrest full. Must end by 3am
+    ("Amethyst", "full", 16 * 60),   # charge, Amethyst (truncated at 3am)
+    # Early morning (Sun 3am-~9am): Yezhi finishes battery, then Alexey, Roman
+    ("Yezhi", None, 25 * 60),        # drives remaining battery from Amethyst
+    ("Alexey", "full", 25 * 60),     # charge, Alexey full
+    ("Roman", "full", 25 * 60),      # charge, Roman full
+    # Late morning (Sun ~10am-12pm): Xiaoyu returns, Yezhi finishes
+    ("Xiaoyu", "full", 25 * 60),     # charge, Xiaoyu half
+    ("Yezhi", None, 25 * 60),        # Yezhi drives remaining battery
 ]
+
+CHARGE_TARGET = 94
 
 
 def charge_time_for_pct(target_pct: float) -> float:
@@ -286,13 +259,15 @@ def build_schedule(full_charge_target: float) -> list[dict]:
             exit_pct = max(midpoint, 10.0)
 
         # Check if this could be the final stint of the race
-        pct_avail_10 = curr_pct - 10.0
-        laps_if_10 = floor(pct_avail_10 / lap_pct) if pct_avail_10 > 0 else 0
-        drive_time_10 = laps_if_10 * lap_time_min
-        time_after = race_minutes - (elapsed + drive_time_10)
-        min_next_cycle = hookup_time + charge_time_between(10, half_charge_target) + charge_delay_time + lap_time_min
-        if time_after < min_next_cycle:
-            exit_pct = 5.0
+        # But don't override shared battery splits — the next driver needs battery
+        if not next_is_shared:
+            pct_avail_10 = curr_pct - 10.0
+            laps_if_10 = floor(pct_avail_10 / lap_pct) if pct_avail_10 > 0 else 0
+            drive_time_10 = laps_if_10 * lap_time_min
+            time_after = race_minutes - (elapsed + drive_time_10)
+            min_next_cycle = hookup_time + charge_time_between(10, half_charge_target) + charge_delay_time + lap_time_min
+            if time_after < min_next_cycle:
+                exit_pct = 5.0
 
         pct_available = curr_pct - exit_pct
         if pct_available <= 0:
@@ -334,18 +309,6 @@ def build_schedule(full_charge_target: float) -> list[dict]:
     return stints
 
 
-def find_optimal_charge_level() -> float:
-    best_laps = 0
-    best_pct = 80.0
-    for charge_pct, _ in charge_data:
-        if charge_pct < 50:
-            continue
-        stints = build_schedule(charge_pct)
-        total = stints[-1]["total_laps"] if stints else 0
-        if total > best_laps:
-            best_laps = total
-            best_pct = charge_pct
-    return best_pct
 
 
 def print_schedule(stints: list[dict], full_charge_target: float):
@@ -493,7 +456,5 @@ def print_schedule(stints: list[dict], full_charge_target: float):
 
 
 if __name__ == "__main__":
-    optimal_pct = find_optimal_charge_level()
-    print(f"Optimal full-battery charge target: {optimal_pct}%")
-    stints = build_schedule(optimal_pct)
-    print_schedule(stints, optimal_pct)
+    stints = build_schedule(CHARGE_TARGET)
+    print_schedule(stints, CHARGE_TARGET)
