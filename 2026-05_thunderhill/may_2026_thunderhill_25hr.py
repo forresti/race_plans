@@ -70,6 +70,49 @@ drivers = {
 race_start_hour = 11
 race_minutes = 25 * 60
 
+# Crew members: 2 people must supervise charging.
+# Neither can be the driver before or after the charge.
+# Blocks with Alexey get Luns, others get Jen.
+block_crew = {
+    0: "Luns",     # Block 1: Alexey, Yezhi, Roman
+    1: "Jen",      # Block 2: Forrest, Xiaoyu, Amethyst
+    2: "Luns",     # Block 3: Alexey, Yezhi, Roman
+}
+
+blocks = [
+    (0, 4, ["Alexey", "Yezhi", "Roman"]),
+    (4, 16, ["Forrest", "Xiaoyu", "Amethyst"]),
+    (16, 25, ["Alexey", "Yezhi", "Roman"]),
+]
+
+def get_block_for_time(elapsed: float) -> int:
+    for i, (start_h, end_h, _) in enumerate(blocks):
+        if start_h * 60 <= elapsed < end_h * 60:
+            return i
+    return len(blocks) - 1
+
+def get_charge_crew(prev_driver: str | None, next_driver: str) -> list[str]:
+    """Return the 2 people who supervise this charge session.
+
+    Uses the next driver's block to determine crew, since the charge is for them.
+    """
+    # Find which block the next driver belongs to
+    bi = None
+    for i, (_, _, bd) in enumerate(blocks):
+        if next_driver in bd:
+            bi = i
+            break
+    if bi is None:
+        bi = get_block_for_time(0)
+    _, _, block_drivers = blocks[bi]
+    crew = block_crew[bi]
+    excluded = {next_driver}
+    if prev_driver:
+        excluded.add(prev_driver)
+    available_drivers = [p for p in block_drivers if p not in excluded]
+    # Crew member is always one of the two; pick one available driver as the other
+    return [available_drivers[0], crew] if available_drivers else [crew]
+
 # --- Stint sequence ---
 # Each entry: (driver_name, charge_target_pct or None for no charge first)
 # None means "drive on whatever battery is left" (for shared-battery stints)
@@ -244,7 +287,13 @@ def build_schedule(full_charge_target: float) -> list[dict]:
             "end_pct": curr_pct,
             "laps": stint_laps,
             "total_laps": total_laps,
+            "charge_crew": None,
         })
+
+        # Compute charge crew for this stint (needs prev driver)
+        if charge_start_elapsed is not None:
+            prev_driver = stints[-2]["driver"] if len(stints) >= 2 else None
+            stints[-1]["charge_crew"] = get_charge_crew(prev_driver, driver_name)
 
     return stints
 
@@ -268,13 +317,13 @@ def print_schedule(stints: list[dict], full_charge_target: float):
     print(f"  THUNDERHILL 25HR RACE PLAN  |  Full charge target: {full_charge_target}%")
     print(f"{'='*80}\n")
 
-    headers = ["Event", "Clock", "Battery", "Laps", "Miles", "Driver"]
-    col_w = [16, 10, 8, 6, 6, 10]
+    headers = ["Event", "Clock", "Battery", "Laps", "Miles", "Driver", "Charge Crew"]
+    col_w = [16, 10, 8, 6, 6, 10, 20]
     header_str = "  ".join(f"{h:>{w}}" for h, w in zip(headers, col_w))
     print(header_str)
     print("-" * len(header_str))
 
-    def row(event, elapsed_val, pct, laps, driver=""):
+    def row(event, elapsed_val, pct, laps, driver="", crew=""):
         clock = format_clock(elapsed_val)
         miles = int(round(laps * track_miles))
         pct_s = f"{pct:.0f}%"
@@ -285,6 +334,7 @@ def print_schedule(stints: list[dict], full_charge_target: float):
             f"{laps:>{col_w[3]}}",
             f"{miles:>{col_w[4]}}",
             f"{driver:>{col_w[5]}}",
+            f"{crew:>{col_w[6]}}",
         ]
         print("  ".join(parts))
 
@@ -293,12 +343,13 @@ def print_schedule(stints: list[dict], full_charge_target: float):
     for s in stints:
         laps_before = s["total_laps"] - s["laps"]
         if s["charge_start_elapsed"] is not None:
+            crew_str = " + ".join(s["charge_crew"]) if s["charge_crew"] else ""
             row("Start Charge", s["charge_start_elapsed"], s["charge_start_pct"],
-                laps_before, s["driver"])
+                laps_before, "-", crew_str)
             row("End Charge", s["charge_end_elapsed"], s["charge_target_pct"],
-                laps_before, s["driver"])
+                laps_before, "-", crew_str)
             row("Buffer", s["buffer_end_elapsed"], s["charge_target_pct"],
-                laps_before, s["driver"])
+                laps_before, "-")
 
         row("Start Stint", s["drive_start"], s["start_pct"], laps_before, s["driver"])
         row("End Stint", s["drive_end"], s["end_pct"], s["total_laps"], s["driver"])
@@ -345,35 +396,63 @@ def print_schedule(stints: list[dict], full_charge_target: float):
     print(f"  Buffer time: {int(total_buffer_min//60)}h {int(total_buffer_min%60):02d}m ({charge_delay_time:.0f}min x {num_charges})")
     print(f"{'='*60}\n")
 
-    # --- Per-driver plans ---
-    for name in drivers:
-        ds = [s for s in stints if s["driver"] == name]
-        if not ds:
+    # --- Per-person plans (drivers + crew) ---
+    all_people = list(drivers.keys()) + sorted(set(block_crew.values()))
+
+    for name in all_people:
+        is_driver = name in drivers
+
+        # Stints this person drives
+        drive_stints = [s for s in stints if s["driver"] == name] if is_driver else []
+        # Charges this person supervises
+        charge_stints = [s for s in stints if s["charge_crew"] and name in s["charge_crew"]]
+
+        if not drive_stints and not charge_stints:
             continue
-        d = drivers[name]
-        mm = d["lap_time"] // 60
-        ss = d["lap_time"] % 60
+
+        # Merge into a timeline sorted by time
+        events = []
+        for s in drive_stints:
+            events.append(("drive", s["drive_start"], s))
+        for s in charge_stints:
+            events.append(("charge", s["charge_start_elapsed"] - hookup_time, s))
+        events.sort(key=lambda e: e[1])
+
         print(f"{'='*60}")
-        print(f"  {name.upper()}'S PLAN  |  {d['battery_mode']} battery  |  {mm}:{ss:02d} laps  |  {d['pct_per_lap']}%/lap")
+        if is_driver:
+            d = drivers[name]
+            mm = d["lap_time"] // 60
+            ss = d["lap_time"] % 60
+            print(f"  {name.upper()}'S PLAN  |  {d['battery_mode']} battery  |  {mm}:{ss:02d} laps  |  {d['pct_per_lap']}%/lap")
+        else:
+            print(f"  {name.upper()}'S PLAN  |  crew")
         print(f"{'='*60}")
-        for stint_num, s in enumerate(ds, 1):
-            laps_before = s["total_laps"] - s["laps"]
+
+        task_num = 0
+        for event_type, _, s in events:
+            task_num += 1
             print()
-            print(f"  Stint {stint_num}:")
-            if s["charge_start_elapsed"] is not None:
+            if event_type == "charge":
+                crew_str = " + ".join(s["charge_crew"])
+                print(f"  Task {task_num}: Charge (with {crew_str})")
                 print(f"    {format_clock(s['charge_start_elapsed'] - hookup_time):>10}  Plug in charger")
                 print(f"    {format_clock(s['charge_start_elapsed']):>10}  Charging {s['charge_start_pct']:.0f}% → {s['charge_target_pct']:.0f}% ({s['charge_min']:.0f} min)")
-                print(f"    {format_clock(s['buffer_end_elapsed']):>10}  Buffer done, get ready")
-            print(f"    {format_clock(s['drive_start']):>10}  Drive  ({s['start_pct']:.0f}% → {s['end_pct']:.0f}%)")
-            drive_min = s["drive_end"] - s["drive_start"]
-            h = int(drive_min // 60)
-            m = int(drive_min % 60)
-            print(f"    {format_clock(s['drive_end']):>10}  Done   ({s['laps']} laps, {int(round(s['laps'] * track_miles))} mi, {h}h {m:02d}m)")
-        total_laps_d = sum(s["laps"] for s in ds)
-        total_min = sum(s["drive_end"] - s["drive_start"] for s in ds)
-        h = int(total_min // 60)
-        m = int(total_min % 60)
-        print(f"\n  Total: {len(ds)} stints, {total_laps_d} laps, {int(round(total_laps_d * track_miles))} mi, {h}h {m:02d}m")
+                print(f"    {format_clock(s['buffer_end_elapsed']):>10}  Buffer done")
+            else:
+                print(f"  Task {task_num}: Drive")
+                print(f"    {format_clock(s['drive_start']):>10}  Drive  ({s['start_pct']:.0f}% → {s['end_pct']:.0f}%)")
+                drive_min = s["drive_end"] - s["drive_start"]
+                h = int(drive_min // 60)
+                m = int(drive_min % 60)
+                print(f"    {format_clock(s['drive_end']):>10}  Done   ({s['laps']} laps, {int(round(s['laps'] * track_miles))} mi, {h}h {m:02d}m)")
+
+        if is_driver:
+            total_laps_d = sum(s["laps"] for s in drive_stints)
+            total_min = sum(s["drive_end"] - s["drive_start"] for s in drive_stints)
+            h = int(total_min // 60)
+            m = int(total_min % 60)
+            print(f"\n  Drive total: {len(drive_stints)} stints, {total_laps_d} laps, {int(round(total_laps_d * track_miles))} mi, {h}h {m:02d}m")
+        print(f"  Charge duties: {len(charge_stints)}")
         print()
 
 
