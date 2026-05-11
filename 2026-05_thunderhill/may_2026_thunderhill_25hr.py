@@ -39,12 +39,12 @@ track_miles = 2.866
 # --- Driver definitions ---
 
 drivers = {
-    "Alexey": {"lap_time": 160, "pct_per_lap": 2.8, "battery_mode": "full"},
-    "Yezhi": {"lap_time": 160, "pct_per_lap": 2.8, "battery_mode": "full"},
-    "Roman": {"lap_time": 170, "pct_per_lap": 2.2, "battery_mode": "full"},
-    "Forrest": {"lap_time": 160, "pct_per_lap": 2.2, "battery_mode": "half"},
-    "Xiaoyu": {"lap_time": 170, "pct_per_lap": 2.2, "battery_mode": "half"},
-    "Amethyst": {"lap_time": 160, "pct_per_lap": 2.1, "battery_mode": "full"},
+    "Alexey": {"lap_time": 160, "pct_per_lap": 2.8},
+    "Yezhi": {"lap_time": 160, "pct_per_lap": 2.8},
+    "Roman": {"lap_time": 170, "pct_per_lap": 2.2},
+    "Forrest": {"lap_time": 160, "pct_per_lap": 2.2},
+    "Xiaoyu": {"lap_time": 170, "pct_per_lap": 2.2},
+    "Amethyst": {"lap_time": 160, "pct_per_lap": 2.1},
 }
 
 race_start_hour = 11
@@ -361,8 +361,8 @@ def print_schedule(stints: list[dict], full_charge_target: float):
     print(f"\n{'='*60}")
     print("  DRIVER SUMMARY")
     print(f"{'='*60}")
-    print(f"  {'Driver':<10} {'Mode':<6} {'Stints':>6} {'Laps':>6} {'Drive Time':>11} {'Miles':>6}")
-    print(f"  {'-'*50}")
+    print(f"  {'Driver':<10} {'Stints':>6} {'Laps':>6} {'Drive Time':>11} {'Miles':>6}")
+    print(f"  {'-'*44}")
 
     printed = set()
     for name in drivers:
@@ -375,8 +375,7 @@ def print_schedule(stints: list[dict], full_charge_target: float):
         h = int(total_min // 60)
         m = int(total_min % 60)
         miles = int(round(total_laps_d * track_miles))
-        mode = drivers[name]["battery_mode"]
-        print(f"  {name:<10} {mode:<6} {len(ds):>6} {total_laps_d:>6} {h:>3}h {m:02d}m       {miles:>6}")
+        print(f"  {name:<10} {len(ds):>6} {total_laps_d:>6} {h:>3}h {m:02d}m       {miles:>6}")
 
     grand_laps = stints[-1]["total_laps"] if stints else 0
     grand_miles = int(round(grand_laps * track_miles))
@@ -422,7 +421,7 @@ def print_schedule(stints: list[dict], full_charge_target: float):
             d = drivers[name]
             mm = d["lap_time"] // 60
             ss = d["lap_time"] % 60
-            print(f"  {name.upper()}'S PLAN  |  {d['battery_mode']} battery  |  {mm}:{ss:02d} laps  |  {d['pct_per_lap']}%/lap")
+            print(f"  {name.upper()}'S PLAN  |  {mm}:{ss:02d} laps  |  {d['pct_per_lap']}%/lap")
         else:
             print(f"  {name.upper()}'S PLAN  |  crew")
         print(f"{'='*60}")
