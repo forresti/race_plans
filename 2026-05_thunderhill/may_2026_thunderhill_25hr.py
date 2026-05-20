@@ -53,17 +53,34 @@ race_minutes = 25 * 60
 # Crew members: 2 people must supervise charging.
 # Neither can be the driver before or after the charge.
 # Blocks with Alexey get Luns, others get Jen.
-block_crew = {
-    0: "Luns",     # Block 1: Alexey, Yezhi, Roman
-    1: "Jen",      # Block 2: Forrest, Xiaoyu, Amethyst
-    2: "Luns",     # Block 3: Alexey, Yezhi, Roman
+# Crew schedule:
+#   Sergey: Sat 11am-3pm, Sun 7am-noon
+#   Luns:   Sat 3pm - Sun 3am
+#   No crew: Sun 3am-7am (only drivers available to charge)
+#
+# Blocks define which drivers + crew are available at each time.
+# Used for charge crew assignment (find 2 people to supervise charging).
+blocks = [
+    (0, 4, ["Yezhi", "Roman", "Xiaoyu"]),          # Sat 11am-3pm
+    (4, 16, ["Forrest", "Xiaoyu", "Amethyst"]),     # Sat 3pm-3am
+    (16, 20, ["Alexey", "Yezhi", "Roman"]),         # Sun 3am-7am (no crew)
+    (20, 25, ["Yezhi", "Roman", "Xiaoyu"]),         # Sun 7am-noon
+]
+
+block_crew: dict[int, str | None] = {
+    0: "Sergey",
+    1: "Luns",
+    2: None,       # no crew available 3am-7am
+    3: "Sergey",
 }
 
-blocks = [
-    (0, 4, ["Alexey", "Yezhi", "Roman"]),
-    (4, 16, ["Forrest", "Xiaoyu", "Amethyst"]),
-    (16, 25, ["Alexey", "Yezhi", "Roman"]),
-]
+
+def get_block_for_time(elapsed: float) -> int:
+    for i, (start_h, end_h, _) in enumerate(blocks):
+        if start_h * 60 <= elapsed < end_h * 60:
+            return i
+    return len(blocks) - 1
+
 
 def future_opportunities(person: str, stints: list[dict], current_idx: int) -> int:
     """Count how many future charges this person could be eligible for."""
@@ -75,12 +92,11 @@ def future_opportunities(person: str, stints: list[dict], current_idx: int) -> i
         prev2 = stints[j - 1]["driver"] if j > 0 else None
         next2 = s2["driver"]
         if person != next2 and person != prev2:
-            # Check person is in the right block
-            for bi2, (_, _, bd2) in enumerate(blocks):
-                if next2 in bd2:
-                    if person in bd2 or person == block_crew[bi2]:
-                        count += 1
-                    break
+            bi2 = get_block_for_time(s2["charge_start_elapsed"])
+            _, _, bd2 = blocks[bi2]
+            crew2 = block_crew[bi2]
+            if person in bd2 or person == crew2:
+                count += 1
     return count
 
 
@@ -91,19 +107,11 @@ def assign_charge_crews(stints: list[dict]) -> None:
         if s["charge_start_elapsed"] is None:
             continue
 
-        # Find prev driver
         idx = stints.index(s)
         prev_driver = stints[idx - 1]["driver"] if idx > 0 else None
         next_driver = s["driver"]
 
-        # Find block for next driver
-        bi = None
-        for i, (_, _, bd) in enumerate(blocks):
-            if next_driver in bd:
-                bi = i
-                break
-        if bi is None:
-            bi = 0
+        bi = get_block_for_time(s["charge_start_elapsed"])
         _, _, block_drivers = blocks[bi]
         crew = block_crew[bi]
 
@@ -113,8 +121,7 @@ def assign_charge_crews(stints: list[dict]) -> None:
         available_drivers = [p for p in block_drivers if p not in excluded]
 
         # Pick the available driver with fewest charge duties so far.
-        # Break ties by fewest future charge opportunities (prefer those who
-        # are harder to schedule).
+        # Break ties by fewest future opportunities (prefer harder-to-schedule people).
         if available_drivers:
             available_drivers.sort(key=lambda p: (
                 charge_counts.get(p, 0),
@@ -122,42 +129,59 @@ def assign_charge_crews(stints: list[dict]) -> None:
             ))
             picked = available_drivers[0]
         else:
-            picked = crew
-        s["charge_crew"] = [picked, crew]
+            picked = crew if crew else next_driver
+
+        if crew:
+            s["charge_crew"] = [picked, crew]
+        else:
+            # No crew available — need 2 drivers
+            remaining = [p for p in available_drivers if p != picked]
+            if remaining:
+                remaining.sort(key=lambda p: charge_counts.get(p, 0))
+                s["charge_crew"] = [picked, remaining[0]]
+                charge_counts[remaining[0]] = charge_counts.get(remaining[0], 0) + 1
+            else:
+                s["charge_crew"] = [picked]
         charge_counts[picked] = charge_counts.get(picked, 0) + 1
-        charge_counts[crew] = charge_counts.get(crew, 0) + 1
+        if crew:
+            charge_counts[crew] = charge_counts.get(crew, 0) + 1
 
 # --- Stint sequence ---
 # (driver, charge_mode, deadline_minutes_from_start)
 # charge_mode: "full" = charge to CHARGE_TARGET, None = drive on current battery
 # deadline: latest time this stint can end
 #
+# Crew:
+#   Sergey: Sat 11am-3pm, Sun 7am-noon
+#   Luns: Sat 3pm - Sun 3am
+#   No crew: Sun 3am-7am
+#
 # Constraints:
-#   Xiaoyu: no night driving. Done by 8pm (9*60), back at 9am (22*60). Half stints.
-#   Forrest, Amethyst: done by 3am (16*60)
-#   Alexey, Yezhi, Roman: morning shift + back at 3am (16*60 onwards)
-#   Alexey, Amethyst: prefer full stints
+#   Xiaoyu: no night driving. Done by 8pm, back at 9am. Half stints.
+#   Forrest, Amethyst: done by 3am
+#   Alexey: both stints back-to-back at night (3am-7am, no crew window)
 #   Everyone: target 2hr+ track time
 #
 # Sunset ~7:20pm, sunrise ~5am. Night = ~8pm-5:30am.
 
 stint_sequence = [
-    # Morning (Sat 11am-~3pm): Alexey, Yezhi, Roman
-    ("Alexey", None, 25 * 60),       # burns starting 96.3%
-    ("Yezhi", "full", 25 * 60),      # charge, Yezhi drives first half
-    ("Roman", None, 25 * 60),        # Roman drives second half (shared)
-    # Afternoon (Sat ~3pm-8pm): Xiaoyu, Forrest, Amethyst
+    # Morning (Sat 11am-~3pm, crew: Sergey)
+    ("Yezhi", None, 25 * 60),        # burns starting 96.3%
     ("Xiaoyu", "full", 9 * 60),      # charge, Xiaoyu half. Must end by 8pm
-    ("Forrest", None, 25 * 60),      # Forrest drives second half (shared)
+    ("Roman", None, 25 * 60),        # Roman half (shared)
+    # Afternoon (Sat ~3pm-8pm, crew: Luns)
+    ("Xiaoyu", "full", 9 * 60),      # charge, Xiaoyu half. Must end by 8pm
+    ("Forrest", None, 25 * 60),      # Forrest half (shared)
     ("Amethyst", "full", 25 * 60),   # charge, Amethyst full
-    # Night (Sat ~9pm-3am): Forrest, Amethyst
+    # Night (Sat ~9pm-3am, crew: Luns)
     ("Forrest", "full", 16 * 60),    # charge, Forrest full. Must end by 3am
     ("Amethyst", "full", 16 * 60),   # charge, Amethyst (truncated at 3am)
-    # Early morning (Sun 3am-~9am): Yezhi finishes battery, then Alexey, Roman
+    # Deep night (Sun 3am-7am, no crew): Alexey back-to-back
     ("Yezhi", None, 25 * 60),        # drives remaining battery from Amethyst
-    ("Alexey", "full", 25 * 60),     # charge, Alexey full
+    ("Alexey", "full", 25 * 60),     # charge (Yezhi+Roman), Alexey full
+    ("Alexey", "full", 25 * 60),     # charge (Yezhi+Roman), Alexey full
+    # Sunday morning (Sun 7am-noon, crew: Sergey)
     ("Roman", "full", 25 * 60),      # charge, Roman full
-    # Late morning (Sun ~10am-12pm): Xiaoyu returns, Yezhi finishes
     ("Xiaoyu", "full", 25 * 60),     # charge, Xiaoyu half
     ("Yezhi", None, 25 * 60),        # Yezhi drives remaining battery
 ]
@@ -398,7 +422,7 @@ def print_schedule(stints: list[dict], full_charge_target: float):
     print(f"{'='*60}\n")
 
     # --- Per-person plans (drivers + crew) ---
-    all_people = list(drivers.keys()) + sorted(set(block_crew.values()))
+    all_people = list(drivers.keys()) + sorted(c for c in set(block_crew.values()) if c)
 
     for name in all_people:
         is_driver = name in drivers
