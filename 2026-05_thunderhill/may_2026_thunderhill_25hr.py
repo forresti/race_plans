@@ -170,8 +170,8 @@ stint_sequence = [
     ("Xiaoyu", "full", 9 * 60),      # charge, Xiaoyu half. Must end by 8pm
     ("Roman", None, 25 * 60),        # Roman half (shared)
     # Afternoon (Sat ~3pm-8pm, crew: Luns)
-    ("Xiaoyu", "full", 9 * 60),      # charge, Xiaoyu half. Must end by 8pm
-    ("Forrest", None, 25 * 60),      # Forrest half (shared)
+    ("Forrest", "full", 25 * 60),    # charge, Forrest half
+    ("Xiaoyu", None, 9 * 60),       # Xiaoyu half (shared). Must end by 8pm
     ("Amethyst", "full", 25 * 60),   # charge, Amethyst full
     # Night (Sat ~9pm-3am, crew: Luns)
     ("Forrest", "full", 16 * 60),    # charge, Forrest full. Must end by 3am
@@ -291,7 +291,7 @@ def build_schedule(full_charge_target: float) -> list[dict]:
             time_after = race_minutes - (elapsed + drive_time_10)
             min_next_cycle = hookup_time + charge_time_between(10, half_charge_target) + charge_delay_time + lap_time_min
             if time_after < min_next_cycle:
-                exit_pct = 5.0
+                exit_pct = 3.0
 
         pct_available = curr_pct - exit_pct
         if pct_available <= 0:
