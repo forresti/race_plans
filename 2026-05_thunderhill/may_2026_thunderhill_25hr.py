@@ -361,21 +361,24 @@ def print_schedule(stints: list[dict], full_charge_target: float):
     print(f"\n{'='*60}")
     print("  DRIVER SUMMARY")
     print(f"{'='*60}")
-    print(f"  {'Driver':<10} {'Stints':>6} {'Laps':>6} {'Drive Time':>11} {'Miles':>6}")
-    print(f"  {'-'*44}")
+    print(f"  {'Driver':<10} {'Lap':>5} {'%/lap':>6} {'Stints':>6} {'Laps':>6} {'Drive Time':>11} {'Miles':>6}")
+    print(f"  {'-'*55}")
 
     printed = set()
     for name in drivers:
         if name in printed:
             continue
         printed.add(name)
+        d = drivers[name]
+        lap_mm = d["lap_time"] // 60
+        lap_ss = d["lap_time"] % 60
         ds = [s for s in stints if s["driver"] == name]
         total_laps_d = sum(s["laps"] for s in ds)
         total_min = sum(s["drive_end"] - s["drive_start"] for s in ds)
         h = int(total_min // 60)
         m = int(total_min % 60)
         miles = int(round(total_laps_d * track_miles))
-        print(f"  {name:<10} {len(ds):>6} {total_laps_d:>6} {h:>3}h {m:02d}m       {miles:>6}")
+        print(f"  {name:<10} {lap_mm}:{lap_ss:02d} {d['pct_per_lap']:>5.1f}% {len(ds):>6} {total_laps_d:>6} {h:>3}h {m:02d}m       {miles:>6}")
 
     grand_laps = stints[-1]["total_laps"] if stints else 0
     grand_miles = int(round(grand_laps * track_miles))
