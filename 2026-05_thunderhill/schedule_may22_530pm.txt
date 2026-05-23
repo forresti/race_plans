@@ -56,11 +56,10 @@
 
 Alexey:
   - 12:20 PM (Sat): Charge (12→94%, 74m) — Roman Bolt, Alexey Tesla
-  - 12:20 PM (Sat): Charge (12→94%, 74m) — Roman Bolt, Alexey Tesla
   - 2:30 PM (Sat): Grill lunch
   - 4:38 AM (Sun): Drive (94→10%, 1h20m)
   - 7:13 AM (Sun): Drive (94→10%, 1h20m)
-  - 8:38 AM (Sun): Charge (10→94%, 75m) — Alexey Bolt, Yezhi Tesla
+  - 8:33 AM (Sun): Charge (10→94%, 75m) — Alexey Bolt, Yezhi Tesla
 
 Yezhi:
   - 11:00 AM (Sat): Drive (96→12%, 1h20m)

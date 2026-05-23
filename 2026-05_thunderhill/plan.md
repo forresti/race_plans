@@ -33,7 +33,7 @@ Amethyst is slightly more efficient than Forrest at any pace due to skill.
 - **No overlap** between the two groups
 
 ## Driver-specific constraints
-- **Xiaoyu**: No night driving. Done by 8 PM, back at 9 AM. Half stints only.
+- **Xiaoyu**: No night driving. Half stints only.
 - **Alexey**: Prefers full stints. Starts the race (fast laps on cold car).
 - **Amethyst**: Prefers full stints.
 - **Yezhi, Roman, Forrest**: Flexible on stint size.
@@ -55,7 +55,7 @@ The race is driven as a fixed sequence of stints, not rotating blocks. "Shared b
 2. Charge → Yezhi half + Roman half (shared)
 
 ### Afternoon (Sat ~3pm–8pm): Xiaoyu, Forrest, Amethyst
-3. Charge → Xiaoyu half + Forrest half (shared). Xiaoyu must finish by 8 PM.
+3. Charge → Xiaoyu half + Forrest half (shared).
 4. Charge → Amethyst full
 
 ### Night (Sat ~9pm–3am): Forrest, Amethyst
@@ -68,7 +68,7 @@ The race is driven as a fixed sequence of stints, not rotating blocks. "Shared b
 9. Charge → Roman full
 
 ### Late morning (Sun ~10am–12pm): Xiaoyu, Yezhi
-10. Charge → Xiaoyu half + Yezhi half (shared). Xiaoyu back at 9 AM.
+10. Charge → Xiaoyu half + Yezhi half (shared).
 
 ## Charge model
 

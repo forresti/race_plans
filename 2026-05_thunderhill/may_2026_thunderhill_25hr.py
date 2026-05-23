@@ -157,7 +157,7 @@ def assign_charge_crews(stints: list[dict]) -> None:
 #   No crew: Sun 3am-7am
 #
 # Constraints:
-#   Xiaoyu: no night driving. Done by 8pm, back at 9am. Half stints.
+#   Xiaoyu: no night driving. Half stints.
 #   Forrest, Amethyst: done by 3am
 #   Alexey: both stints back-to-back at night (3am-7am, no crew window)
 #   Everyone: target 2hr+ track time
@@ -167,11 +167,11 @@ def assign_charge_crews(stints: list[dict]) -> None:
 stint_sequence = [
     # Morning (Sat 11am-~3pm, crew: Sergey)
     ("Yezhi", None, 25 * 60),        # burns starting 96.3%
-    ("Xiaoyu", "full", 9 * 60),      # charge, Xiaoyu half. Must end by 8pm
+    ("Xiaoyu", "full", 25 * 60),     # charge, Xiaoyu half
     ("Roman", None, 25 * 60),        # Roman half (shared)
     # Afternoon (Sat ~3pm-8pm, crew: Luns)
     ("Forrest", "full", 25 * 60),    # charge, Forrest half
-    ("Xiaoyu", None, 9 * 60),       # Xiaoyu half (shared). Must end by 8pm
+    ("Xiaoyu", None, 25 * 60),      # Xiaoyu half (shared)
     ("Amethyst", "full", 25 * 60),   # charge, Amethyst full
     # Night (Sat ~9pm-3am, crew: Luns)
     ("Forrest", "full", 16 * 60),    # charge, Forrest full. Must end by 3am
