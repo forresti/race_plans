@@ -481,6 +481,48 @@ def print_schedule(stints: list[dict], full_charge_target: float):
         print()
 
 
+def print_agendas(stints: list[dict]):
+    """Print informal per-person agendas suitable for copy-pasting."""
+    print(f"\n{'='*60}")
+    print("  COPY-PASTE AGENDAS")
+    print(f"{'='*60}\n")
+
+    all_people = list(drivers.keys()) + sorted(c for c in set(block_crew.values()) if c)
+
+    for name in all_people:
+        is_driver = name in drivers
+        drive_stints = [s for s in stints if s["driver"] == name] if is_driver else []
+        charge_stints = [s for s in stints if s["charge_crew"] and name in s["charge_crew"]]
+
+        if not drive_stints and not charge_stints:
+            continue
+
+        events = []
+        for s in drive_stints:
+            events.append(("drive", s["drive_start"], s))
+        for s in charge_stints:
+            events.append(("charge", s["charge_start_elapsed"] - hookup_time, s))
+        events.sort(key=lambda e: e[1])
+
+        print(name)
+        for event_type, _, s in events:
+            if event_type == "drive":
+                start = format_clock(s["drive_start"])
+                end = format_clock(s["drive_end"])
+                print(f"{start} to {end} – Drive stint in the Bolt")
+                print(f"  Starts at {s['start_pct']:.0f}% battery")
+                print(f"  Ends at {s['end_pct']:.0f}% battery")
+                print(f"  {s['laps']} laps / {int(round(s['laps'] * track_miles))} miles")
+            else:
+                crew_str = " + ".join(s["charge_crew"])
+                connect = format_clock(s["charge_start_elapsed"] - hookup_time)
+                done = format_clock(s["buffer_end_elapsed"])
+                print(f"{connect} to {done} – Charging: {crew_str}")
+                print(f"  {s['charge_start_pct']:.0f}% → {s['charge_target_pct']:.0f}% ({s['charge_min']:.0f} min charging + {charge_delay_time:.0f} min buffer)")
+        print()
+
+
 if __name__ == "__main__":
     stints = build_schedule(CHARGE_TARGET)
     print_schedule(stints, CHARGE_TARGET)
+    print_agendas(stints)
