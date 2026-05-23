@@ -1,0 +1,100 @@
+⏺ THUNDERHILL 25HR RACE PLAN | Full charge target: 94%                                                                                            
+                                         
+             Event       Clock   Battery    Laps   Miles      Driver           Charge Crew                                                        
+  ----------------------------------------------------------------------------------------                                                        
+        Race Start    11:00 AM       96%       0       0                                                                                          
+       Start Stint    11:00 AM       96%       0       0       Yezhi                                                                              
+         End Stint    12:20 PM       12%      30      86       Yezhi                                                                              
+      Start Charge    12:25 PM       12%      30      86           -        Roman + Alexey                                                        
+        End Charge     1:14 PM       94%      30      86           -        Roman + Alexey                                                        
+            Buffer     1:34 PM       94%      30      86           -                                                                              
+       Start Stint     1:34 PM       94%      30      86      Xiaoyu                                                                              
+         End Stint     2:27 PM       52%      49     140      Xiaoyu                                                                              
+       Start Stint     2:32 PM       52%      49     140       Roman                                                                              
+         End Stint     3:26 PM       10%      68     195       Roman                                                                              
+      Start Charge     3:31 PM       10%      68     195           -       Amethyst + Luns                                                        
+        End Charge     4:21 PM       94%      68     195           -       Amethyst + Luns                                                        
+            Buffer     4:41 PM       94%      68     195           -                                                                              
+       Start Stint     4:41 PM       94%      68     195     Forrest                                                                              
+         End Stint     5:32 PM       52%      87     249     Forrest                                                                              
+       Start Stint     5:37 PM       52%      87     249      Xiaoyu
+         End Stint     6:31 PM       10%     106     304      Xiaoyu                                                                              
+      Start Charge     6:36 PM       10%     106     304           -        Forrest + Luns
+        End Charge     7:26 PM       94%     106     304           -        Forrest + Luns                                                        
+            Buffer     7:46 PM       94%     106     304           -
+       Start Stint     7:46 PM       94%     106     304    Amethyst                                                                              
+         End Stint     9:33 PM       10%     146     418    Amethyst                                                                              
+      Start Charge     9:38 PM       10%     146     418           -         Xiaoyu + Luns                                                        
+        End Charge    10:28 PM       94%     146     418           -         Xiaoyu + Luns                                                        
+            Buffer    10:48 PM       94%     146     418           -                                                                              
+       Start Stint    10:48 PM       94%     146     418     Forrest                                                                              
+         End Stint    12:29 AM       10%     184     527     Forrest                                                                              
+      Start Charge    12:34 AM       10%     184     527           -         Xiaoyu + Luns                                                        
+        End Charge     1:24 AM       94%     184     527           -         Xiaoyu + Luns                                                        
+            Buffer     1:44 AM       94%     184     527           -                                                                              
+       Start Stint     1:44 AM       94%     184     527    Amethyst                                                                              
+         End Stint     2:38 AM       52%     204     585    Amethyst
+       Start Stint     2:43 AM       52%     204     585       Yezhi                                                                              
+         End Stint     3:23 AM       10%     219     628       Yezhi
+      Start Charge     3:28 AM       10%     219     628           -        Roman + Yezhi                                                         
+        End Charge     4:18 AM       94%     219     628           -        Roman + Yezhi                                                         
+            Buffer     4:38 AM       94%     219     628           -                                                                              
+       Start Stint     4:38 AM       94%     219     628      Alexey                                                                              
+         End Stint     5:58 AM       10%     249     714      Alexey                                                                              
+      Start Charge     6:03 AM       10%     249     714           -         Yezhi + Roman
+        End Charge     6:53 AM       94%     249     714           -         Yezhi + Roman                                                        
+            Buffer     7:13 AM       94%     249     714           -                                                                              
+       Start Stint     7:13 AM       94%     249     714      Alexey                                                                              
+         End Stint     8:33 AM       10%     279     800      Alexey                                                                              
+      Start Charge     8:38 AM       10%     279     800           -        Yezhi + Alexey                                                        
+        End Charge     9:29 AM       94%     279     800           -        Yezhi + Alexey                                                        
+            Buffer     9:49 AM       94%     279     800           -                                                                              
+       Start Stint     9:49 AM       94%     279     800       Roman                                                                              
+         End Stint    11:45 AM        4%     320     917       Roman                                                                              
+          Race End    11:45 AM        4%     320     917         
+
+
+Alexey:
+  - 12:20 PM (Sat): Charge (12→94%, 74m) — Roman Bolt, Alexey Tesla
+  - 12:20 PM (Sat): Charge (12→94%, 74m) — Roman Bolt, Alexey Tesla
+  - 2:30 PM (Sat): Grill lunch
+  - 4:38 AM (Sun): Drive (94→10%, 1h20m)
+  - 7:13 AM (Sun): Drive (94→10%, 1h20m)
+  - 8:38 AM (Sun): Charge (10→94%, 75m) — Alexey Bolt, Yezhi Tesla
+
+Yezhi:
+  - 11:00 AM (Sat): Drive (96→12%, 1h20m)
+  - 2:43 AM (Sun): Drive (52→10%, 40m)
+  - 3:23 AM (Sun): Charge (10→94%, 75m) — Yezhi Bolt, Roman Tesla
+  - 5:58 AM (Sun): Charge (10→94%, 75m) — Yezhi Tesla, Roman Bolt
+  - 8:33 AM (Sun): Charge (10→94%, 75m) — Yezhi Tesla, Alexey Bolt
+
+Roman:
+  - 12:20 PM (Sat): Charge (12→94%, 74m) — Roman Bolt, Alexey Tesla
+  - 2:32 PM (Sat): Drive (52→10%, 53m)                             
+  - 3:23 AM (Sun): Charge (10→94%, 75m) — Roman Tesla, Yezhi Bolt
+  - 5:58 AM (Sun): Charge (10→94%, 75m) — Roman Bolt, Yezhi Tesla
+  - 9:49 AM (Sun): Drive (94→4%, 1h56m)                          
+
+Forrest:                                                                                                                                                     
+  - 4:41 PM (Sat): Drive (94→52%, 50m)
+  - 6:31 PM (Sat): Charge (10→94%, 75m) — Forrest Tesla, Luns Bolt                                                                                             
+  - 10:48 PM (Sat): Drive (94→10%, 1h41m)                         
+                                                                                                                                                               
+Xiaoyu:                                                                                                                                                      
+  - 1:34 PM (Sat): Drive (94→52%, 53m)                                                                                                                         
+  - 5:37 PM (Sat): Drive (52→10%, 53m)                                                                                                                         
+  - 9:33 PM (Sat): Charge (10→94%, 75m) — Xiaoyu Bolt, Luns Tesla
+  - 12:29 AM (Sun): Charge (10→94%, 75m) — Xiaoyu Tesla, Luns Bolt                                                                                             
+                                                                                                                                                               
+Amethyst:                                                                                                                                                    
+  - 3:26 PM (Sat): Charge (10→94%, 75m) — Amethyst Tesla, Luns Bolt                                                                                            
+  - 7:46 PM (Sat): Drive (94→10%, 1h46m)                                                                                                                       
+  - 1:44 AM (Sun): Drive (94→52%, 53m)                      
+                                                                                                                                                               
+Luns:                                                                                                                                                        
+  - 3:26 PM (Sat): Charge (10→94%, 75m) — Luns Bolt, Amethyst Tesla                                                                                            
+  - 6:31 PM (Sat): Charge (10→94%, 75m) — Luns Bolt, Forrest Tesla                                                                                             
+  - 9:33 PM (Sat): Charge (10→94%, 75m) — Luns Tesla, Xiaoyu Bolt 
+  - 12:29 AM (Sun): Charge (10→94%, 75m) — Luns Bolt, Xiaoyu Tesla                                                                                             
+                                                                                                                                                               
